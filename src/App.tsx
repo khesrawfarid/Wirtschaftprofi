@@ -62,12 +62,18 @@ export default function App() {
   // Load questions when game starts
   const startLearningJourney = async () => {
     setIsLoading(true);
-    const q = await generateQuestions(plan.subject.topic || plan.subject.name, `${plan.subject.curriculumLevel}. Klasse`, 10, plan.subject.name);
-    setQuestions(q);
-    setCurrentQuestionIndex(0);
-    setProgress(prev => ({ ...prev, gameScore: 0, postTestScore: null }));
-    setIsLoading(false);
-    setState('game');
+    try {
+      const q = await generateQuestions(plan.subject.topic || plan.subject.name, `${plan.subject.curriculumLevel}. Klasse`, 10, plan.subject.name);
+      setQuestions(q);
+      setCurrentQuestionIndex(0);
+      setProgress(prev => ({ ...prev, gameScore: 0, postTestScore: null }));
+      setState('game');
+    } catch (error: any) {
+      console.error(error);
+      alert(`Ups! Es gab ein Problem beim Generieren der Fragen: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleAnswer = (index: number) => {
