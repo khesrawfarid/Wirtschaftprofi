@@ -38,6 +38,7 @@ export interface Question {
 export async function generateQuestions(topic: string, level: string, count: number = 5, subject: string = ""): Promise<Question[]> {
   try {
     const aiClient = getAiClient();
+    console.log("AI Client successfully initialized. Requesting subject: ", subject);
     const languageInstruction = subject.toLowerCase() === 'englisch' 
       ? "CRITICAL: The questions, options, and explanations MUST be written entirely in English." 
       : "The questions, options, and explanations should be written in German.";
