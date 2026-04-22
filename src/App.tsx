@@ -11,7 +11,7 @@ const startLearningJourney = async () => {
 
     if (!Array.isArray(q)) {
       throw new Error("Ungültiges Fragen-Format von Gemini");
-    }
+    } 
 
     setQuestions(q);
     setCurrentQuestionIndex(0);
