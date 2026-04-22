@@ -15,7 +15,7 @@ export interface GamePlan {
     name: string;
     topic: string;
     curriculumLevel: string;
-  }; 
+  };
   motivationTheories: string[];
   gamificationElements: string[];
 }
