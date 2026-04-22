@@ -18,7 +18,12 @@ function getAiClient(): GoogleGenAI {
     }
 
     if (!apiKey) {
-      throw new Error("Gemini API Key is missing. Please provide a valid API Key.");
+      throw new Error(`Gemini API Key fehlt in der gebauten App!
+      
+Auf GitHub Pages musst du folgendes prüfen:
+1. In GitHub bei "Settings" (links "Pages"): Ist die "Source" auf "GitHub Actions" gestellt? (Nicht "Deploy from branch").
+2. In GitHub bei "Settings -> Secrets and variables -> Actions": Hast du das Secret EXACT als "VITE_GEMINI_API_KEY" (unter Repository secrets) angelegt?
+3. Nachdem du Punkt 1 und 2 gemacht hast, musst du den Code nochmal exportieren/pushen oder in Actions den letzten Workflow manuell neu starten (\`Re-run all jobs\`).`);
     }
     
     ai = new GoogleGenAI({ apiKey });
