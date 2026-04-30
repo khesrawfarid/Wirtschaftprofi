@@ -95,6 +95,7 @@ async function startServer() {
     // Need to define __dirname for ESM
     const __dirname = path.resolve();
     const distPath = path.join(__dirname, 'dist');
+    app.use('/Wirtschaftprofi', express.static(distPath));
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
