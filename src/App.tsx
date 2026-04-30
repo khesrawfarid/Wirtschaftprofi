@@ -22,7 +22,7 @@ import { generateQuestions, Question } from './services/geminiService';
 import { vocabulary } from './data/questions';
 import { GamePlan, UserProgress, MOTIVATION_THEORIES, GAMIFICATION_ELEMENTS } from './types';
 
-type AppState = 'landing' | 'planning' | 'pre-test' | 'game' | 'post-test' | 'evaluation' | 'results' | 'achievements' | 'vocabulary' | 'multiplayer';
+type AppState = 'landing' | 'planning' | 'pre-test' | 'game' | 'post-test' | 'evaluation' | 'results' | 'achievements' | 'vocabulary' | 'multiplayer' | 'party-lobby';
 
 export default function App() {
   const [state, setState] = useState<AppState>('landing');
@@ -65,6 +65,28 @@ export default function App() {
   const [originalQuestionCount, setOriginalQuestionCount] = useState(1);
   const [firstAttemptCorrectCount, setFirstAttemptCorrectCount] = useState(0);
   const [mistakeCount, setMistakeCount] = useState(0);
+  const [playerName, setPlayerName] = useState("");
+  const [partyCode, setPartyCode] = useState("");
+  const [joinCode, setJoinCode] = useState("");
+  const [partyPlayers, setPartyPlayers] = useState<{name: string, score: number}[]>([]);
+
+  const createParty = () => {
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    setPartyCode(code);
+    setPartyPlayers([{ name: playerName, score: 0 }]);
+    setState('party-lobby');
+  };
+
+  const joinParty = () => {
+    if (joinCode.length > 0) {
+      setPartyCode(joinCode);
+      setPartyPlayers([
+        { name: 'Host', score: 0 },
+        { name: playerName, score: 0 }
+      ]);
+      setState('party-lobby');
+    }
+  };
 
   // Load questions when game starts
   const startLearningJourney = async () => {
@@ -722,7 +744,21 @@ export default function App() {
               <div className="w-full max-w-md bg-[#F5F1E7] p-8 md:p-12 rounded-[40px] shadow-2xl text-[#4A3538] relative overflow-hidden">
                 <div className="absolute top-0 right-0 -mr-10 -mt-10 w-32 h-32 bg-[#E8DCC2] rounded-full blur-2xl opacity-50 pointer-events-none"></div>
                 <div className="relative z-10 flex flex-col gap-6">
-                  <button className="w-full bg-[#722F37] text-white py-6 rounded-2xl font-black uppercase tracking-widest hover:bg-[#4A1E24] shadow-lg transition-all hover:-translate-y-1 active:translate-y-0">
+                  <div className="flex flex-col gap-3 mb-2">
+                    <label className="text-xs font-black uppercase opacity-50 ml-1 text-left">Dein Name</label>
+                    <input 
+                      type="text" 
+                      placeholder="SPIELERNAME"
+                      value={playerName}
+                      onChange={(e) => setPlayerName(e.target.value)}
+                      className="w-full bg-[#E8DCC2] border-2 border-transparent focus:border-[#C2A878] focus:bg-white text-center text-[#4A3538] font-bold py-4 rounded-xl outline-none transition-all placeholder:text-[#4A3538]/30 placeholder:tracking-widest"
+                    />
+                  </div>
+                  <button 
+                    disabled={!playerName.trim()}
+                    onClick={createParty}
+                    className="w-full bg-[#722F37] text-white py-6 rounded-2xl font-black uppercase tracking-widest hover:bg-[#4A1E24] shadow-lg transition-all hover:-translate-y-1 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                  >
                     Party erstellen
                   </button>
                   <div className="relative flex py-2 items-center">
@@ -734,12 +770,80 @@ export default function App() {
                     <input 
                       type="text" 
                       placeholder="PARTY-CODE"
+                      value={joinCode}
+                      onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                       className="w-full bg-[#E8DCC2] border-2 border-transparent focus:border-[#C2A878] focus:bg-white text-center text-[#4A3538] font-mono tracking-[0.2em] py-4 rounded-xl outline-none transition-all uppercase font-bold placeholder:text-[#4A3538]/30 placeholder:tracking-widest"
                     />
-                    <button className="w-full bg-[#C2A878] text-white py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-[#B09665] shadow-md transition-all hover:-translate-y-1 active:translate-y-0">
+                    <button 
+                      disabled={!playerName.trim() || !joinCode.trim()}
+                      onClick={joinParty}
+                      className="w-full bg-[#C2A878] text-white py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-[#B09665] shadow-md transition-all hover:-translate-y-1 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                    >
                       Beitreten
                     </button>
                   </div>
+                </div>
+              </div>
+            </motion.section>
+          )}
+          {state === 'party-lobby' && (
+            <motion.section 
+              key="party-lobby"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="max-w-4xl mx-auto py-12 px-8 w-full flex flex-col items-center min-h-[80vh]"
+            >
+              <div className="mb-12 text-center">
+                <span className="text-xs font-mono uppercase tracking-widest opacity-80 mb-4 block text-[#E8DCC2]">Party Lobby</span>
+                <h2 className="text-6xl font-serif italic text-[#F5F1E7] mb-4">Warten auf Spieler...</h2>
+                <div className="bg-[#4A1E24] px-8 py-4 rounded-2xl flex items-center gap-4 mx-auto max-w-max shadow-xl border border-white/10">
+                  <span className="text-[#E8DCC2] opacity-70 font-bold uppercase tracking-widest text-sm">Party Code:</span>
+                  <span className="text-4xl font-mono font-black text-white tracking-[0.2em]">{partyCode}</span>
+                </div>
+              </div>
+
+              <div className="w-full max-w-2xl bg-[#F5F1E7] p-8 md:p-12 rounded-[40px] shadow-2xl text-[#4A3538] relative overflow-hidden">
+                <div className="absolute top-0 left-0 -ml-10 -mt-10 w-32 h-32 bg-[#E8DCC2] rounded-full blur-2xl opacity-50 pointer-events-none"></div>
+                <h3 className="text-2xl font-black uppercase tracking-widest mb-8 text-center relative z-10">Spieler ({partyPlayers.length})</h3>
+                
+                <div className="flex flex-col gap-4 relative z-10">
+                  {partyPlayers.map((player, i) => (
+                    <div key={i} className="flex items-center gap-4 bg-[#E8DCC2] p-4 rounded-2xl border border-[#4A3538]/5">
+                      <div className="w-12 h-12 bg-[#722F37] text-white rounded-full flex items-center justify-center font-black text-xl shadow-inner">
+                        {player.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="font-bold text-lg">{player.name}</span>
+                      {i === 0 && (
+                        <span className="ml-auto text-xs font-black uppercase tracking-widest bg-[#C2A878] text-[#4A3538] px-3 py-1 rounded-full">Host</span>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {/* Empty slots */}
+                  {Array.from({ length: Math.max(0, 4 - partyPlayers.length) }).map((_, i) => (
+                    <div key={`empty-${i}`} className="flex items-center gap-4 bg-[#E8DCC2]/30 p-4 rounded-2xl border border-dashed border-[#4A3538]/20">
+                      <div className="w-12 h-12 bg-[#4A3538]/10 rounded-full border border-dashed border-[#4A3538]/20" />
+                      <span className="font-bold text-lg text-[#4A3538]/30">Wartet auf Spieler...</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-12 relative z-10">
+                  <button 
+                    onClick={() => {
+                      setState('planning'); // Or some actual game entry? Using 'planning' for now to configure and start.
+                    }}
+                    className="w-full bg-[#722F37] hover:bg-[#4A1E24] text-white py-6 rounded-2xl font-black uppercase tracking-widest shadow-lg transition-all hover:-translate-y-1 active:translate-y-0"
+                  >
+                    Als Host Starten
+                  </button>
+                  <button 
+                    onClick={() => setState('multiplayer')}
+                    className="w-full mt-4 bg-transparent border-2 border-[#722F37]/20 text-[#722F37] hover:bg-[#722F37]/5 py-4 rounded-2xl font-bold uppercase tracking-widest transition-colors"
+                  >
+                    Verlassen
+                  </button>
                 </div>
               </div>
             </motion.section>
