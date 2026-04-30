@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { io, Socket } from 'socket.io-client';
 import { 
   Trophy, 
   Target, 
@@ -70,21 +71,58 @@ export default function App() {
   const [joinCode, setJoinCode] = useState("");
   const [partyPlayers, setPartyPlayers] = useState<{name: string, score: number}[]>([]);
 
+  const socketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    socketRef.current = io(window.location.origin);
+    
+    socketRef.current.on('party_created', ({ partyCode, players }) => {
+      setPartyCode(partyCode);
+      setPartyPlayers(players);
+      setState('party-lobby');
+    });
+
+    socketRef.current.on('party_joined', ({ partyCode, players }) => {
+      setPartyCode(partyCode);
+      setPartyPlayers(players);
+      setState('party-lobby');
+    });
+
+    socketRef.current.on('party_updated', ({ players }) => {
+      setPartyPlayers(players);
+    });
+
+    socketRef.current.on('error', ({ message }) => {
+      alert(message);
+    });
+
+    return () => {
+      socketRef.current?.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!socketRef.current) return;
+    
+    const handleGameStarted = () => {
+      startLearningJourney();
+    };
+    
+    socketRef.current.on('game_started', handleGameStarted);
+    return () => {
+      socketRef.current?.off('game_started', handleGameStarted);
+    };
+  }, [plan, selectedVocab]);
+
   const createParty = () => {
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    setPartyCode(code);
-    setPartyPlayers([{ name: playerName, score: 0 }]);
-    setState('party-lobby');
+    if (playerName.trim() && socketRef.current) {
+      socketRef.current.emit('create_party', { playerName });
+    }
   };
 
   const joinParty = () => {
-    if (joinCode.length > 0) {
-      setPartyCode(joinCode);
-      setPartyPlayers([
-        { name: 'Host', score: 0 },
-        { name: playerName, score: 0 }
-      ]);
-      setState('party-lobby');
+    if (joinCode.length > 0 && playerName.trim() && socketRef.current) {
+      socketRef.current.emit('join_party', { partyCode: joinCode, playerName });
     }
   };
 
@@ -832,14 +870,23 @@ export default function App() {
                 <div className="mt-12 relative z-10">
                   <button 
                     onClick={() => {
-                      setState('planning'); // Or some actual game entry? Using 'planning' for now to configure and start.
+                      if (socketRef.current) {
+                        socketRef.current.emit('start_game', { partyCode });
+                      }
                     }}
                     className="w-full bg-[#722F37] hover:bg-[#4A1E24] text-white py-6 rounded-2xl font-black uppercase tracking-widest shadow-lg transition-all hover:-translate-y-1 active:translate-y-0"
                   >
                     Als Host Starten
                   </button>
                   <button 
-                    onClick={() => setState('multiplayer')}
+                    onClick={() => {
+                      if (socketRef.current) {
+                         // A simple disconnect and reconnect or just leave event
+                         socketRef.current.disconnect();
+                         socketRef.current.connect();
+                      }
+                      setState('multiplayer');
+                    }}
                     className="w-full mt-4 bg-transparent border-2 border-[#722F37]/20 text-[#722F37] hover:bg-[#722F37]/5 py-4 rounded-2xl font-bold uppercase tracking-widest transition-colors"
                   >
                     Verlassen
