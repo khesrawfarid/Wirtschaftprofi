@@ -74,7 +74,10 @@ export default function App() {
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    socketRef.current = io(window.location.origin);
+    const socketUrl = import.meta.env.DEV ? window.location.origin : 'https://wirtschaftprofi.onrender.com';
+    socketRef.current = io(socketUrl, {
+      transports: ['websocket', 'polling']
+    });
     
     socketRef.current.on('party_created', ({ partyCode, players }) => {
       setPartyCode(partyCode);
