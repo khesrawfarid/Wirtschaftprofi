@@ -22,11 +22,14 @@ import {
 import { generateQuestions, Question } from './services/geminiService';
 import { vocabulary } from './data/questions';
 import { GamePlan, UserProgress, MOTIVATION_THEORIES, GAMIFICATION_ELEMENTS } from './types';
+import { PartyGame } from './components/PartyGame';
+import { PartyResults } from './components/PartyResults';
 
-type AppState = 'landing' | 'planning' | 'pre-test' | 'game' | 'post-test' | 'evaluation' | 'results' | 'achievements' | 'vocabulary' | 'multiplayer' | 'party-lobby';
+type AppState = 'landing' | 'planning' | 'pre-test' | 'game' | 'post-test' | 'evaluation' | 'results' | 'achievements' | 'vocabulary' | 'multiplayer' | 'party-lobby' | 'party-game' | 'party-results';
 
 export default function App() {
   const [state, setState] = useState<AppState>('landing');
+  const [vocabReturnTarget, setVocabReturnTarget] = useState<AppState | null>(null);
   const [selectedVocab, setSelectedVocab] = useState<string[]>(vocabulary.map(v => v.en));
   const [plan, setPlan] = useState<GamePlan>({
     targetGroup: { 
@@ -71,6 +74,7 @@ export default function App() {
   const [joinCode, setJoinCode] = useState("");
   const [partyPlayers, setPartyPlayers] = useState<{name: string, score: number}[]>([]);
   const [partyHost, setPartyHost] = useState("");
+  const [partyData, setPartyData] = useState<any>(null);
 
   const unsubscribeParty = useRef<(() => void) | null>(null);
 
@@ -93,7 +97,8 @@ export default function App() {
       await setDoc(doc(db, 'parties', newCode), {
         host: playerName,
         state: 'lobby',
-        players: [{ name: playerName, score: 0 }]
+        players: [{ name: playerName, score: 0 }],
+        selectedVocab: selectedVocab
       });
 
       setPartyCode(newCode);
@@ -105,9 +110,12 @@ export default function App() {
       unsubscribeParty.current = onSnapshot(doc(db, 'parties', newCode), (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
+          setPartyData(data);
           setPartyPlayers(data.players || []);
           if (data.state === 'playing') {
-             startLearningJourney();
+             setState('party-game');
+          } else if (data.state === 'results') {
+             setState('party-results');
           }
         } else {
           alert("Party wurde beendet.");
@@ -154,10 +162,13 @@ export default function App() {
       unsubscribeParty.current = onSnapshot(partyRef, (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
+          setPartyData(data);
           setPartyPlayers(data.players || []);
           setPartyHost(data.host);
           if (data.state === 'playing') {
-             startLearningJourney();
+             setState('party-game');
+          } else if (data.state === 'results') {
+             setState('party-results');
           }
         } else {
           alert("Party wurde beendet.");
@@ -316,7 +327,7 @@ export default function App() {
         <div className="flex-1 flex flex-col gap-6 w-full px-2 text-white/40">
           <div 
             className={`flex flex-col items-center gap-2 cursor-pointer hover:text-white transition-colors py-2 ${state === 'vocabulary' ? 'text-white' : ''}`} 
-            onClick={() => setState('vocabulary')} 
+            onClick={() => { setVocabReturnTarget(null); setState('vocabulary'); }} 
           >
             <BookOpen className="w-6 h-6" />
             <span className="text-[10px] uppercase font-bold tracking-wider text-center">Vokabeln</span>
@@ -644,7 +655,7 @@ export default function App() {
                       Beantworte alle 10 Vokabeln im ersten Versuch richtig, um deine erste goldene Trophäe freizuschalten.
                     </p>
                     <button 
-                      onClick={() => setState('vocabulary')}
+                      onClick={() => { setVocabReturnTarget(null); setState('vocabulary'); }}
                       className="mt-10 px-8 py-4 bg-[#722F37] text-[#F5F1E7] rounded-2xl font-bold uppercase tracking-wider hover:bg-[#4A1E24] transition-colors shadow-lg"
                     >
                       Jetzt lernen!
@@ -739,14 +750,26 @@ export default function App() {
                     >
                       Keine
                     </button>
-                    <button
-                      onClick={startLearningJourney}
-                      disabled={isLoading || selectedVocab.length === 0}
-                      className="px-6 py-2 bg-[#C2A878] hover:bg-[#B09665] text-white rounded-lg font-bold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center gap-2"
-                    >
-                      {isLoading ? 'Lädt...' : 'Lernen starten'}
-                      <Play className="w-4 h-4" />
-                    </button>
+                    {vocabReturnTarget ? (
+                      <button
+                        onClick={() => {
+                          setState(vocabReturnTarget);
+                          setVocabReturnTarget(null);
+                        }}
+                        className="px-6 py-2 bg-[#C2A878] hover:bg-[#B09665] text-white rounded-lg font-bold text-sm transition-colors shadow-lg flex items-center gap-2"
+                      >
+                        Speichern & Zurück
+                      </button>
+                    ) : (
+                      <button
+                        onClick={startLearningJourney}
+                        disabled={isLoading || selectedVocab.length === 0}
+                        className="px-6 py-2 bg-[#C2A878] hover:bg-[#B09665] text-white rounded-lg font-bold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center gap-2"
+                      >
+                        {isLoading ? 'Lädt...' : 'Lernen starten'}
+                        <Play className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -827,7 +850,22 @@ export default function App() {
 
               <div className="w-full max-w-md bg-[#F5F1E7] p-8 md:p-12 rounded-[40px] shadow-2xl text-[#4A3538] relative overflow-hidden">
                 <div className="absolute top-0 right-0 -mr-10 -mt-10 w-32 h-32 bg-[#E8DCC2] rounded-full blur-2xl opacity-50 pointer-events-none"></div>
+                
                 <div className="relative z-10 flex flex-col gap-6">
+                  
+                  <div className="bg-[#E8DCC2]/50 p-4 rounded-2xl flex items-center justify-between border border-[#4A3538]/10 mb-4">
+                    <div className="text-left">
+                      <span className="text-[10px] font-black uppercase opacity-50 block mb-1">Ausgewählte Vokabeln</span>
+                      <span className="font-bold">{selectedVocab.length} Vokabeln bereit</span>
+                    </div>
+                    <button 
+                      onClick={() => { setVocabReturnTarget('multiplayer'); setState('vocabulary'); }}
+                      className="px-4 py-2 bg-[#4A3538] text-white rounded-lg text-xs font-bold uppercase hover:bg-[#722F37] transition-colors"
+                    >
+                      Bearbeiten
+                    </button>
+                  </div>
+
                   <div className="flex flex-col gap-3 mb-2">
                     <label className="text-xs font-black uppercase opacity-50 ml-1 text-left">Dein Name</label>
                     <input 
@@ -918,10 +956,39 @@ export default function App() {
                     <button 
                       onClick={async () => {
                         try {
-                          const { doc, updateDoc } = await import('firebase/firestore');
+                          const { doc, getDoc, updateDoc } = await import('firebase/firestore');
                           const { db } = await import('./lib/firebase');
-                          await updateDoc(doc(db, 'parties', partyCode), {
-                            state: 'playing'
+                          const { predefinedQuestions, vocabulary } = await import('./data/questions');
+                          
+                          const partyRef = doc(db, 'parties', partyCode);
+                          const snap = await getDoc(partyRef);
+                          const pData = snap.data();
+                          if (!pData) return;
+                          
+                          const partyVocab = pData.selectedVocab || [];
+                          
+                          // Get questions only for selected vocab
+                          const filteredQ = predefinedQuestions["Englisch"].filter(question => {
+                             return partyVocab.some((vocabEn: string) => {
+                               const vocabMatch = vocabulary.find(v => v.en === vocabEn);
+                               return vocabMatch && (question.text.includes(`"${vocabMatch.en}"`) || question.text.includes(`"${vocabMatch.de}"`));
+                             });
+                          });
+                          
+                          // Shuffle questions
+                          let finalQ = filteredQ.sort(() => 0.5 - Math.random());
+                          
+                          // Ensure we have questions
+                          if (finalQ.length === 0) {
+                            alert("Keine Vokabeln gefunden. Konnte nicht starten.");
+                            return;
+                          }
+                          
+                          await updateDoc(partyRef, {
+                            state: 'playing',
+                            questions: finalQ,
+                            currentQuestionIndex: 0,
+                            questionStartTime: Date.now()
                           });
                         } catch (err) {
                           console.error(err);
@@ -969,6 +1036,40 @@ export default function App() {
                   </button>
                 </div>
               </div>
+            </motion.section>
+          )}
+          {state === 'party-game' && (
+            <motion.section 
+              key="party-game"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="max-w-4xl mx-auto py-12 px-8 w-full flex flex-col items-center min-h-[80vh] justify-center"
+            >
+              <PartyGame 
+                 partyData={partyData} 
+                 playerName={playerName} 
+                 partyCode={partyCode} 
+                 isHost={playerName === partyHost}
+                 onExit={() => setState('multiplayer')}
+              />
+            </motion.section>
+          )}
+          {state === 'party-results' && (
+            <motion.section 
+              key="party-results"
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="max-w-4xl mx-auto py-12 px-8 w-full flex flex-col items-center min-h-[80vh] justify-center"
+            >
+              <PartyResults 
+                 partyData={partyData} 
+                 playerName={playerName} 
+                 partyCode={partyCode} 
+                 isHost={playerName === partyHost}
+                 onExit={() => setState('multiplayer')}
+              />
             </motion.section>
           )}
         </AnimatePresence>
