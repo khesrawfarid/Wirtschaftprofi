@@ -70,62 +70,105 @@ export default function App() {
   const [partyCode, setPartyCode] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [partyPlayers, setPartyPlayers] = useState<{name: string, score: number}[]>([]);
+  const [partyHost, setPartyHost] = useState("");
 
-  const socketRef = useRef<Socket | null>(null);
+  const unsubscribeParty = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    const socketUrl = import.meta.env.DEV ? window.location.origin : 'https://wirtschaftprofi.onrender.com';
-    socketRef.current = io(socketUrl, {
-      transports: ['websocket', 'polling']
-    });
-    
-    socketRef.current.on('party_created', ({ partyCode, players }) => {
-      setPartyCode(partyCode);
-      setPartyPlayers(players);
-      setState('party-lobby');
-    });
-
-    socketRef.current.on('party_joined', ({ partyCode, players }) => {
-      setPartyCode(partyCode);
-      setPartyPlayers(players);
-      setState('party-lobby');
-    });
-
-    socketRef.current.on('party_updated', ({ players }) => {
-      setPartyPlayers(players);
-    });
-
-    socketRef.current.on('error', ({ message }) => {
-      alert(message);
-    });
-
     return () => {
-      socketRef.current?.disconnect();
+      if (unsubscribeParty.current) {
+        unsubscribeParty.current();
+      }
     };
   }, []);
 
-  useEffect(() => {
-    if (!socketRef.current) return;
+  const createParty = async () => {
+    if (!playerName.trim()) return;
+    const newCode = Math.random().toString(36).substring(2, 6).toUpperCase();
     
-    const handleGameStarted = () => {
-      startLearningJourney();
-    };
-    
-    socketRef.current.on('game_started', handleGameStarted);
-    return () => {
-      socketRef.current?.off('game_started', handleGameStarted);
-    };
-  }, [plan, selectedVocab]);
+    try {
+      const { setDoc, doc } = await import('firebase/firestore');
+      const { db } = await import('./lib/firebase');
+      
+      await setDoc(doc(db, 'parties', newCode), {
+        host: playerName,
+        state: 'lobby',
+        players: [{ name: playerName, score: 0 }]
+      });
 
-  const createParty = () => {
-    if (playerName.trim() && socketRef.current) {
-      socketRef.current.emit('create_party', { playerName });
+      setPartyCode(newCode);
+      setPartyHost(playerName);
+      setState('party-lobby');
+      
+      // Listen to party changes
+      const { onSnapshot } = await import('firebase/firestore');
+      unsubscribeParty.current = onSnapshot(doc(db, 'parties', newCode), (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setPartyPlayers(data.players || []);
+          if (data.state === 'playing') {
+             startLearningJourney();
+          }
+        } else {
+          alert("Party wurde beendet.");
+          setState('multiplayer');
+          if (unsubscribeParty.current) unsubscribeParty.current();
+        }
+      });
+
+    } catch (err) {
+      console.error(err);
+      alert("Fehler beim Erstellen der Party");
     }
   };
 
-  const joinParty = () => {
-    if (joinCode.length > 0 && playerName.trim() && socketRef.current) {
-      socketRef.current.emit('join_party', { partyCode: joinCode, playerName });
+  const joinParty = async () => {
+    if (!joinCode.trim() || !playerName.trim()) return;
+    const code = joinCode.toUpperCase();
+    
+    try {
+      const { getDoc, updateDoc, arrayUnion, doc, onSnapshot } = await import('firebase/firestore');
+      const { db } = await import('./lib/firebase');
+      const partyRef = doc(db, 'parties', code);
+      const partySnap = await getDoc(partyRef);
+      
+      if (!partySnap.exists()) {
+        alert("Party nicht gefunden");
+        return;
+      }
+      
+      if (partySnap.data().state !== 'lobby') {
+        alert("Spiel läuft bereits");
+        return;
+      }
+
+      setPartyHost(partySnap.data().host);
+      
+      await updateDoc(partyRef, {
+        players: arrayUnion({ name: playerName, score: 0 })
+      });
+
+      setPartyCode(code);
+      setState('party-lobby');
+      
+      unsubscribeParty.current = onSnapshot(partyRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setPartyPlayers(data.players || []);
+          setPartyHost(data.host);
+          if (data.state === 'playing') {
+             startLearningJourney();
+          }
+        } else {
+          alert("Party wurde beendet.");
+          setState('multiplayer');
+          if (unsubscribeParty.current) unsubscribeParty.current();
+        }
+      });
+
+    } catch (err) {
+      console.error(err);
+      alert("Fehler beim Beitreten der Party");
     }
   };
 
@@ -871,23 +914,53 @@ export default function App() {
                 </div>
 
                 <div className="mt-12 relative z-10">
+                  {playerName === partyHost && (
+                    <button 
+                      onClick={async () => {
+                        try {
+                          const { doc, updateDoc } = await import('firebase/firestore');
+                          const { db } = await import('./lib/firebase');
+                          await updateDoc(doc(db, 'parties', partyCode), {
+                            state: 'playing'
+                          });
+                        } catch (err) {
+                          console.error(err);
+                          alert('Konnte Spiel nicht starten');
+                        }
+                      }}
+                      className="w-full bg-[#722F37] hover:bg-[#4A1E24] text-white py-6 rounded-2xl font-black uppercase tracking-widest shadow-lg transition-all hover:-translate-y-1 active:translate-y-0"
+                    >
+                      Als Host Starten
+                    </button>
+                  )}
                   <button 
-                    onClick={() => {
-                      if (socketRef.current) {
-                        socketRef.current.emit('start_game', { partyCode });
+                    onClick={async () => {
+                      if (unsubscribeParty.current) unsubscribeParty.current();
+                      
+                      try {
+                        const { doc, getDoc, updateDoc, arrayRemove, deleteDoc } = await import('firebase/firestore');
+                        const { db } = await import('./lib/firebase');
+                        const partyRef = doc(db, 'parties', partyCode);
+                        const snap = await getDoc(partyRef);
+                        
+                        if (snap.exists()) {
+                           const data = snap.data();
+                           const isHost = data.host === playerName;
+                           if (isHost) {
+                             await deleteDoc(partyRef);
+                           } else {
+                             const playerObj = data.players.find((p: any) => p.name === playerName);
+                             if (playerObj) {
+                               await updateDoc(partyRef, {
+                                 players: arrayRemove(playerObj)
+                               });
+                             }
+                           }
+                        }
+                      } catch (err) {
+                        console.error(err);
                       }
-                    }}
-                    className="w-full bg-[#722F37] hover:bg-[#4A1E24] text-white py-6 rounded-2xl font-black uppercase tracking-widest shadow-lg transition-all hover:-translate-y-1 active:translate-y-0"
-                  >
-                    Als Host Starten
-                  </button>
-                  <button 
-                    onClick={() => {
-                      if (socketRef.current) {
-                         // A simple disconnect and reconnect or just leave event
-                         socketRef.current.disconnect();
-                         socketRef.current.connect();
-                      }
+                      
                       setState('multiplayer');
                     }}
                     className="w-full mt-4 bg-transparent border-2 border-[#722F37]/20 text-[#722F37] hover:bg-[#722F37]/5 py-4 rounded-2xl font-bold uppercase tracking-widest transition-colors"
