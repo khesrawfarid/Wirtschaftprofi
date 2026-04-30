@@ -116,7 +116,7 @@ export function PartyGame({ partyData, playerName, partyCode, isHost, onExit }: 
       
       {roundState === 'playing' ? (
         <div className="w-full bg-[#F5F1E7] rounded-[40px] p-8 md:p-12 text-center shadow-2xl relative overflow-hidden mb-8">
-          <h2 className="text-3xl md:text-5xl font-serif italic text-[#4A3538] mb-8">{currentQuestion.text}</h2>
+          <h2 className="text-3xl md:text-5xl font-black tracking-tight text-[#4A3538] mb-8">{currentQuestion.text}</h2>
           
           <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-lg mx-auto">
             <input
@@ -152,7 +152,7 @@ export function PartyGame({ partyData, playerName, partyCode, isHost, onExit }: 
         </div>
       ) : (
         <div className="w-full bg-[#F5F1E7] rounded-[40px] p-8 md:p-12 text-center shadow-2xl relative overflow-hidden mb-8">
-           <h2 className="text-3xl font-serif italic text-[#4A3538] mb-8">Runde {currentQuestionIndex + 1} beendet!</h2>
+           <h2 className="text-3xl font-black tracking-tight text-[#4A3538] mb-8">Runde {currentQuestionIndex + 1} beendet!</h2>
            <p className="text-xl text-[#722F37] font-bold mb-8">Richtige Antwort: {currentQuestion.options[currentQuestion.correctAnswer]}</p>
            
            <div className="bg-[#4A1E24] rounded-[24px] p-6 w-full max-w-sm mx-auto shadow-xl border border-white/10">

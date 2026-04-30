@@ -536,7 +536,7 @@ export default function App() {
               animate={{ opacity: 1 }}
               className="max-w-2xl mx-auto py-20 px-8"
             >
-              <h2 className="text-5xl font-serif italic mb-8 text-center">Evaluation</h2>
+              <h2 className="text-5xl font-black tracking-tight mb-8 text-center">Evaluation</h2>
               <p className="text-center opacity-60 mb-12">Hilf uns, die A-Tutor-League noch besser zu machen. Dein Feedback zählt!</p>
 
               <div className="space-y-8 bg-white p-12 rounded-[40px] border border-[#2A1114]/5 text-[#4A3538]">
@@ -578,7 +578,7 @@ export default function App() {
             >
               <div className="text-center mb-20">
                 <span className="text-xs font-mono uppercase tracking-widest opacity-50 mb-4 block">A-Tutor-League Report</span>
-                <h2 className="text-6xl font-serif italic">Deine Auswertung</h2>
+                <h2 className="text-6xl font-black tracking-tight">Deine Auswertung</h2>
               </div>
 
               <div className="flex justify-center mb-12 text-[#4A3538]">
@@ -633,7 +633,7 @@ export default function App() {
             >
               <div className="text-center mb-16">
                 <span className="text-xs font-mono uppercase tracking-widest opacity-80 mb-4 block text-[#E8DCC2]">Ruhmeshalle</span>
-                <h2 className="text-6xl font-serif italic text-[#F5F1E7]">Deine Erfolge</h2>
+                <h2 className="text-6xl font-black tracking-tight text-[#F5F1E7]">Deine Erfolge</h2>
                 <p className="mt-4 text-[#E8DCC2] opacity-80 max-w-2xl mx-auto">
                   Eine Übersicht deiner besten Leistungen und erworbenen Auszeichnungen. Jeder fehlerfreie Durchlauf belohnt dich mit neuen Trophäen.
                 </p>
@@ -692,7 +692,7 @@ export default function App() {
                           </div>
                           
                           <p className="font-black uppercase tracking-widest text-xs text-[#E8DCC2] mb-2">Titel</p>
-                          <p className="font-serif italic text-2xl px-2 line-clamp-2">{badge}</p>
+                          <p className="font-black tracking-tight text-2xl px-2 line-clamp-2">{badge}</p>
                           
                           {/* Decorative stars */}
                           <div className="flex justify-center gap-1 mt-6 opacity-60">
@@ -731,7 +731,7 @@ export default function App() {
                 <span className="text-xs font-mono uppercase tracking-widest opacity-50 mb-2 block">Vokabel-Manager</span>
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                   <div>
-                    <h2 className="text-5xl font-serif italic mb-2">Deine Vokabeln</h2>
+                    <h2 className="text-5xl font-black tracking-tight mb-2">Deine Vokabeln</h2>
                     <p className="text-white/60">
                       {selectedVocab.length} von {vocabulary.length} Vokabeln ausgewählt
                     </p>
@@ -842,7 +842,7 @@ export default function App() {
                    <Users className="w-full h-full text-[#722F37] relative z-10" />
                 </div>
                 <span className="text-xs font-mono uppercase tracking-widest opacity-80 mb-4 block text-[#E8DCC2]">Party-Modus</span>
-                <h2 className="text-6xl font-serif italic text-[#F5F1E7] mb-6">Gemeinsam Lernen</h2>
+                <h2 className="text-6xl font-black tracking-tight text-[#F5F1E7] mb-6">Gemeinsam Lernen</h2>
                 <p className="text-lg opacity-80 max-w-lg mx-auto text-[#E8DCC2]">
                   Erstelle eine Party oder trete einer bei, um gemeinsam in Echtzeit Vokabeln auf die Probe zu stellen.
                 </p>
@@ -918,7 +918,7 @@ export default function App() {
             >
               <div className="mb-12 text-center">
                 <span className="text-xs font-mono uppercase tracking-widest opacity-80 mb-4 block text-[#E8DCC2]">Party Lobby</span>
-                <h2 className="text-6xl font-serif italic text-[#F5F1E7] mb-4">Warten auf Spieler...</h2>
+                <h2 className="text-6xl font-black tracking-tight text-[#F5F1E7] mb-4">Warten auf Spieler...</h2>
                 <div className="bg-[#4A1E24] px-8 py-4 rounded-2xl flex items-center gap-4 mx-auto max-w-max shadow-xl border border-white/10">
                   <span className="text-[#E8DCC2] opacity-70 font-bold uppercase tracking-widest text-sm">Party Code:</span>
                   <span className="text-4xl font-mono font-black text-white tracking-[0.2em]">{partyCode}</span>

@@ -23,7 +23,7 @@ export function PartyResults({ partyData, playerName, partyCode, isHost, onExit 
           <Trophy className="w-16 h-16 text-white" />
         </motion.div>
         
-        <h2 className="text-6xl font-serif italic text-white mb-2 py-2">
+        <h2 className="text-6xl font-black tracking-tight text-white mb-2 py-2">
           {isWinner ? "Du hast gewonnen!" : `${winner?.name || 'Jemand'} hat gewonnen!`}
         </h2>
         <span className="text-[#E8DCC2] font-mono text-sm uppercase tracking-widest bg-[#4A1E24] px-4 py-2 rounded-xl inline-block mt-4">
