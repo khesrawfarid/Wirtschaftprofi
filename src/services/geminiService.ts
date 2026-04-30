@@ -2,11 +2,13 @@ import { predefinedQuestions } from '../data/questions';
 
 export interface Question {
   id: string;
+  vocabId?: string;
   text: string;
   options: string[];
   correctAnswer: number;
   explanation: string;
   difficulty: 'easy' | 'medium' | 'hard';
+  failed?: boolean;
 }
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -22,8 +24,8 @@ export async function generateQuestions(topic: string, level: string, count: num
   // Simulate network delay to maintain the visual "loading" effect
   await new Promise(resolve => setTimeout(resolve, 1500));
   
-  // Use predefined questions for the requested subject or 'Gemischt' as fallback
-  const subjectList = predefinedQuestions[subject] || predefinedQuestions['Gemischt'];
+  // Use predefined questions for the requested subject or the first available subject as fallback
+  const subjectList = predefinedQuestions[subject] || Object.values(predefinedQuestions)[0] || [];
   
   // Mix them up and return the requested amount (up to the amount available)
   const mixed = shuffleArray(subjectList);
